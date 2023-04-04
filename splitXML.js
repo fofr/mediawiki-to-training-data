@@ -1,5 +1,6 @@
 import fs from 'fs-extra'
 import xml2js from 'xml2js'
+import { astToText, parse } from 'wikiparse'
 const parser = new xml2js.Parser()
 const args = process.argv.slice(2)
 
@@ -62,8 +63,14 @@ fs.readFile(inputFile, 'utf8', (err, data) => {
           const timestamp = page.revision[0].timestamp[0].split('T')[0]
           const filename = `${title}_${timestamp}`.replace(/[^\w\/]|_/g, '-').toLowerCase()
           const outputFile = `${outputFolder}/${filename}.json`
+          const ast = parse(page.revision[0].text[0]._)
 
-          fs.writeJson(outputFile, page, { spaces: 2 })
+          const outputData = {
+            title: page.title[0],
+            content: astToText(ast)
+          }
+
+          fs.writeJson(outputFile, outputData, { spaces: 2 })
             .then(() => console.log(`Created: ${outputFile}`))
             .catch(err => console.error(`Error writing JSON file: ${err}`))
         })
