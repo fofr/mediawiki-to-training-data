@@ -1,0 +1,24 @@
+{
+  "name": "wiki-xml-parser",
+  "version": "1.0.0",
+  "description": "Split out a MediaWiki XML file into files",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fofr/wiki-xml-parser.git"
+  },
+  "author": "fofr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fofr/wiki-xml-parser/issues"
+  },
+  "homepage": "https://github.com/fofr/wiki-xml-parser#readme",
+  "dependencies": {
+    "fs-extra": "^11.1.1",
+    "xml2js": "^0.4.23"
+  }
+}
