@@ -17,13 +17,26 @@ const excludedPrefixes = [
   'User blog comment:',
   'MediaWiki:',
   'File:',
+  'File talk:',
   'Talk:',
-  'Forum:'
+  'Template:',
+  'Template talk:',
+  'Forum:',
+  'Forum talk:',
+  'Board:',
+  'Category:',
+  'Category talk:'
+]
+
+const excludedTitles = [
+  'Wiki:',
+  'Wiki talk:'
 ]
 
 const filterPages = (page) => {
   return (
     !excludedPrefixes.some(prefix => page.title[0].startsWith(prefix)) &&
+    !excludedTitles.some(title => page.title[0].includes(title)) &&
     !page.hasOwnProperty('redirect')
   )
 }
