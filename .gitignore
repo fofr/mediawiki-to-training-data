@@ -3,6 +3,8 @@ logs
 node_modules/
 .env
 .env.test
+*.7z
 *.xml
 output/
+training/
 *.DS_Store
