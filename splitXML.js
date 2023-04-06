@@ -1,6 +1,5 @@
 import fs from 'fs-extra'
 import xml2js from 'xml2js'
-import { astToText, parse } from 'wikiparse'
 const parser = new xml2js.Parser()
 const args = process.argv.slice(2)
 
@@ -26,7 +25,12 @@ const excludedPrefixes = [
   'Forum talk:',
   'Board:',
   'Category:',
-  'Category talk:'
+  'Category talk:',
+  'Module:',
+  'Thread:',
+
+  // Wiki specific
+  'Memory Alpha:'
 ]
 
 const excludedTitles = [
@@ -40,6 +44,67 @@ const filterPages = (page) => {
     !excludedTitles.some(title => page.title[0].includes(title)) &&
     !page.hasOwnProperty('redirect')
   )
+}
+
+const excludeLinesWithoutContent = (text) => {
+  const startsWith = [
+    '[[en:',
+    '[[da:',
+    '[[de:',
+    '[[fr:',
+    '[[fi:',
+    '[[es:',
+    '[[it:',
+    '[[no:',
+    '[[nl:',
+    '[[pl:',
+    '[[pt:',
+    '[[pt-br:',
+    '[[ru:',
+    '[[sv:',
+    '[[zh:',
+    '[[bg:',
+    '[[cs:',
+    '[[ja:',
+    '[[Category:',
+    '[[File:',
+    '*{{startrek.com',
+    '*{{Wikipedia}}',
+    '*{{mbeta}}',
+    ';{{visible'
+  ]
+
+  const lines = text.split('\n')
+  const filteredLines = lines.filter(line => {
+    const lineWithoutSpaces = line.replace(/\s/g, '')
+    return !startsWith.some(prefix => lineWithoutSpaces.startsWith(prefix))
+  })
+  return filteredLines.join('\n')
+}
+
+function breakTextIntoChunks (text, maxChunkSize = 10000) {
+  const lines = text.split('\n')
+  const chunks = []
+  let chunk = ''
+  let chunkSize = 0
+
+  for (const line of lines) {
+    const lineSize = line.length + 1 // Adding 1 for the newline character
+    if (chunkSize + lineSize <= maxChunkSize) {
+      chunk += line + '\n'
+      chunkSize += lineSize
+    } else {
+      chunks.push(chunk)
+      chunk = line + '\n'
+      chunkSize = lineSize
+    }
+  }
+
+  if (chunk) {
+    chunks.push(chunk)
+  }
+
+  return chunks
 }
 
 fs.readFile(inputFile, 'utf8', (err, data) => {
@@ -62,17 +127,20 @@ fs.readFile(inputFile, 'utf8', (err, data) => {
           const title = page.title[0].replace(/\//g, '-')
           const timestamp = page.revision[0].timestamp[0].split('T')[0]
           const filename = `${title}_${timestamp}`.replace(/[^\w\/]|_/g, '-').toLowerCase()
-          const outputFile = `${outputFolder}/${filename}.json`
-          const ast = parse(page.revision[0].text[0]._)
+          let text = page.revision[0].text[0]._
+          text = excludeLinesWithoutContent(text.replace(/<[^>]*>/g, ''))
+          const chunks = breakTextIntoChunks(text)
 
-          const outputData = {
-            title: page.title[0],
-            content: astToText(ast)
+          for (const [index, chunk] of chunks.entries()) {
+            const outputData = `
+${title}
+
+${chunk}`.trim()
+
+            const outputFile = `${outputFolder}/${filename}_${index}.txt`
+            fs.writeFile(outputFile, outputData)
+              .then(() => console.log(`Created: ${outputFile}`))
           }
-
-          fs.writeJson(outputFile, outputData, { spaces: 2 })
-            .then(() => console.log(`Created: ${outputFile}`))
-            .catch(err => console.error(`Error writing JSON file: ${err}`))
         })
       })
       .catch(err => console.error(`Error creating output folder: ${err}`))
