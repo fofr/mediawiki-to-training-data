@@ -4,8 +4,8 @@ import * as dotenv from 'dotenv'
 import { ChatGPTAPI } from 'chatgpt'
 dotenv.config()
 
-const outputDir = 'output'
-const trainingDir = 'training'
+const outputDir = 'pages'
+const trainingDir = 'training_data'
 
 const getSystemMessage = (questionCount) => {
   return `
@@ -25,10 +25,27 @@ Return your JSON using JSONL in the format:
 
 const isValidJSONL = (jsonl) => {
   const lines = jsonl.split('\n')
-  return lines.every(line => {
+  return lines.every((line) => {
     try {
       if (line.trim() === '') return true
-      JSON.parse(line)
+      const obj = JSON.parse(line)
+
+      if (typeof obj.prompt !== 'string') {
+        if (Array.isArray(obj.prompt)) {
+          obj.prompt = obj.prompt.join(' ')
+        } else {
+          return false
+        }
+      }
+
+      if (typeof obj.completion !== 'string') {
+        if (Array.isArray(obj.completion)) {
+          obj.completion = obj.completion.join(' ')
+        } else {
+          return false
+        }
+      }
+
       return true
     } catch (e) {
       return false
