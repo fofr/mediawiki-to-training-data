@@ -20,15 +20,35 @@ async function main() {
       // Read the content of the .jsonl file
       const content = await fs.readFile(path.join(trainingDir, jsonlFile), 'utf-8')
 
-      // Add the content to the array
-      jsonlContents.push(content)
+      // Split the content into lines and filter the lines based on the conditions
+      const filteredLines = content
+        .split('\n')
+        .filter(line => {
+          const trimmedLine = line.trim();
+          return (
+            trimmedLine.length > 0 &&
+            !trimmedLine.startsWith('[') &&
+            !trimmedLine.endsWith(']') &&
+            trimmedLine.includes('{"prompt":"') &&
+            trimmedLine.includes(',"completion":"')
+          );
+        })
+
+      // Join the filtered lines and add the content to the array
+      jsonlContents.push(filteredLines.join('\n'))
     }
 
     // Combine all contents into a single string with newline separation
     const combinedContent = jsonlContents.join('\n')
 
-    // Write the combined content to the output file
-    await fs.writeFile(path.join(trainingDir, combinedFileName), combinedContent)
+    // Split the combined content into lines and filter out the empty lines
+    const finalContent = combinedContent
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .join('\n')
+
+    // Write the final content to the output file
+    await fs.writeFile(path.join(trainingDir, combinedFileName), finalContent)
 
     console.log(`Combined .jsonl files into ${combinedFileName}`)
   } catch (err) {
