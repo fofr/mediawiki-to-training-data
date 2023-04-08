@@ -9,7 +9,7 @@ if (args.length < 1) {
 }
 
 const inputFile = args[0]
-const outputFolder = 'output'
+const outputFolder = 'pages'
 const excludedPrefixes = [
   'User:',
   'User talk:',

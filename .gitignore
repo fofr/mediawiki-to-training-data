@@ -5,6 +5,6 @@ node_modules/
 .env.test
 *.7z
 *.xml
-output/
-training/
+pages/
+training_data/
 *.DS_Store
