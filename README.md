@@ -3,7 +3,7 @@
 Creates a `.jsonl` file in the format:
 
 ```json
-{"prompt":"Question","completion":"Answer}
+{"prompt":"Question","completion":"Answer"}
 ```
 
 This data can be used to fine tune a large language model.
