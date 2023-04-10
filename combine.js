@@ -2,7 +2,13 @@ import fs from 'fs/promises'
 import path from 'path'
 
 const trainingDir = 'training_data'
-const combinedFileName = 'training_data.jsonl'
+const combinedFileName = process.argv[2]
+
+// if the filename is not provided, exit the program
+if (!combinedFileName) {
+  console.error('Please provide a filename')
+  process.exit(1)
+}
 
 async function main() {
   try {
