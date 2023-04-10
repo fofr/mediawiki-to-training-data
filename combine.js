@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-const trainingDir = 'training'
-const combinedFileName = 'combined.jsonl'
+const trainingDir = 'training_data'
+const combinedFileName = 'training_data.jsonl'
 
 async function main() {
   try {
@@ -48,7 +48,7 @@ async function main() {
       .join('\n')
 
     // Write the final content to the output file
-    await fs.writeFile(path.join(trainingDir, combinedFileName), finalContent)
+    await fs.writeFile(combinedFileName, finalContent)
 
     console.log(`Combined .jsonl files into ${combinedFileName}`)
   } catch (err) {
