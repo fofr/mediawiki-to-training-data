@@ -6,6 +6,7 @@ dotenv.config()
 
 const outputDir = 'pages'
 const trainingDir = 'training_data'
+const concurrentRequests = 10
 
 const getSystemMessage = (questionCount) => {
   return `
@@ -68,37 +69,47 @@ async function main() {
     process.exit(1)
   }
 
-  for (const file of fs.readdirSync(outputDir)) {
-    const trainingPath = path.join(trainingDir, path.basename(file, '.txt') + '.jsonl')
-    if (fs.existsSync(trainingPath)) {
-      console.log(`Skipping ${file} as a .jsonl file already exists`)
-      continue
-    }
+  const files = fs.readdirSync(outputDir)
+  const fileChunks = []
 
-    console.log(`Processing ${file}`)
-    const content = fs.readFileSync(path.join(outputDir, file), 'utf-8')
-    const questionCount = content.length > 5000 ? 10 : Math.ceil(content.length / 500)
+  for (let i = 0; i < files.length; i += concurrentRequests) {
+    fileChunks.push(files.slice(i, i + concurrentRequests))
+  }
 
-    console.log(content.length, questionCount)
-    const chatAgent = new ChatGPTAPI({
-      apiKey,
-      systemMessage: getSystemMessage(questionCount)
+  for (const chunk of fileChunks) {
+    const chunkPromises = chunk.map(async (file) => {
+      const trainingPath = path.join(trainingDir, path.basename(file, '.txt') + '.jsonl')
+      if (fs.existsSync(trainingPath)) {
+        console.log(`Skipping ${file} as a .jsonl file already exists`)
+        return
+      }
+
+      console.log(`Processing ${file}`)
+      const content = fs.readFileSync(path.join(outputDir, file), 'utf-8')
+      const questionCount = content.length > 5000 ? 10 : Math.ceil(content.length / 500)
+
+      console.log(content.length, questionCount)
+      const chatAgent = new ChatGPTAPI({
+        apiKey,
+        systemMessage: getSystemMessage(questionCount)
+      })
+
+      try {
+        const res = await chatAgent.sendMessage(content)
+
+        if (isValidJSONL(res.text)) {
+          const parsedContent = parseJSONL(res.text)
+          fs.writeFileSync(trainingPath, parsedContent)
+          console.log(`Wrote parsed JSONL to ${trainingPath}`)
+        } else {
+          console.error(`Invalid JSONL in:\n\n${res.text}`)
+        }
+      } catch (err) {
+        console.error(`An error occurred while processing ${file}:`, err)
+      }
     })
 
-    try {
-      const res = await chatAgent.sendMessage(content)
-
-      if (isValidJSONL(res.text)) {
-        const parsedContent = parseJSONL(res.text)
-        fs.writeFileSync(trainingPath, parsedContent)
-        console.log(`Wrote parsed JSONL to ${trainingPath}`)
-      } else {
-        console.error(`Invalid JSONL in:\n\n${res.text}`)
-      }
-    } catch (err) {
-      console.error(`An error occurred while processing ${file}:`, err)
-      continue
-    }
+    await Promise.all(chunkPromises)
   }
 }
 
