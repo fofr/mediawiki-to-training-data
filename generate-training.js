@@ -69,6 +69,9 @@ async function main() {
     process.exit(1)
   }
 
+  // Make the training directory if it doesn't exist
+  fs.mkdirSync(trainingDir, { recursive: true })
+
   const files = fs.readdirSync(outputDir)
   const fileChunks = []
 
