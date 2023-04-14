@@ -1,4 +1,4 @@
-# Generate training data from a MediaWiki XML file
+# Generate training data and fine-tune an LLM from a MediaWiki XML file
 
 Creates a `.jsonl` file in the format:
 
@@ -6,7 +6,7 @@ Creates a `.jsonl` file in the format:
 {"prompt":"Question","completion":"Answer"}
 ```
 
-This data can be used to fine tune a large language model.
+You can use this data can be used to fine tune a large language model.
 
 This process uses GPT3.5 to generate training data. The data can only be used to create models that do not compete with OpenAI, as per the OpenAI terms of service.
 
@@ -20,10 +20,11 @@ cd mediawiki-to-training-data
 npm install
 ```
 
-Then copy your [OpenAI API key](https://platform.openai.com/account/api-keys) and add it to a `.env` file:
+Then copy your [OpenAI API key](https://platform.openai.com/account/api-keys) and [Replicate API token](https://replicate.com/docs/get-started/nodejs) and add them to a `.env` file:
 
 ```sh
 echo "OPENAI_API_KEY=<your-key-here>" > .env
+echo "REPLICATE_API_TOKEN=<your-replicate-yet-here>" > .env
 ```
 
 ### Download MediaWiki content
@@ -70,10 +71,48 @@ A `.jsonl` file is created for each text file in `training_data/`.
 
 You can pause and resume the generation of training data. Pages with a corresponding `.jsonl` file are skipped.
 
-## Combine training data
+### Combine training data
 
 When you have enough training data, combine them into a single `.jsonl` file for training.
 
 ```sh
 node combine.js your-output-file.jsonl
 ```
+
+### Fine tune an LLM using Replicate
+
+Now you have your training data you can fine-tune an LLM.
+
+`train.js` is a script for [fine-tuning pre-trained language models using the Replicate API](https://replicate.com/docs/guides/fine-tune-a-language-model). You can fine-tune your language model with your own training data and choose from one of the available models: Llama, GPT, and Flan.
+
+You need:
+
+- An account on Replicate
+- Your Replicate API token
+- A destination model to save your fine tuned model ([Create a model](https://replicate.com/create))
+- A URL pointing to your generated training data
+
+Set the destination variable to the username and model name you want to save the fine-tuned model to. For example, if your username is `myusername` and you want to save the model as `mymodel`, set destination to 'myusername/mymodel'.
+
+Set the `train_data` variable to the URL of your training data.
+
+Choose the pre-trained model you want to fine-tune. Use one of the following:
+
+```js
+const [llm, version] = LLMs.llama // For Llama model
+const [llm, version] = LLMs.gpt   // For GPT model
+const [llm, version] = LLMs.flan  // For Flan model
+```
+
+After setting the variables, save the file and run the script with `node train.js`. The script will create a new fine-tuning job using the Replicate API, and it will print the details of the training job, including the URL to track the progress of your fine-tuning.
+
+### Track progress or cancel job
+
+`train.js` also includes two functions:
+
+- get()
+- cancel()
+
+They can be used to retrieve the details of an existing training job or cancel a training job.
+
+You can also see progress or cancel the job from the web UI.
