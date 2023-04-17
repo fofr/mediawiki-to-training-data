@@ -8,101 +8,124 @@ const outputDir = 'pages'
 const trainingDir = 'training_data'
 const concurrentRequests = 2
 
-const getSystemMessage = () => {
+const newEpisode = () => {
   return `
-You only return content in the defined structure.
-
-You will be given a description of what happens in an episode of Star Trek.
-You need to write a synopsis of this episode in a “Choose your own adventure” style.
-While you give choices that you could take, you do not follow those choices.
-You take a single path through the episode.
-
-If you chose startingChoice1, you do not give details about startingChoice2 and vice versa.
-If you chose optA, you do not give details about optB and vice versa.
-It's ok to ignore the parts of the episode that do not relate to your chosen story path.
-
-Use a second person perspective. Always use 'You', not 'I'.
-
-You must use the following structure, this is so responses can be correctly coded.
-
-\`\`\`
-<flavor>[the type of series, for example TNG, DS9, VOY, ENT, TOS, TAS, DIS]</flavor>
-<start>
-<startingChoice1> You are ... [give episode context] </startingChoice1>
-<startingChoice2> You are ... [give episode context] </startingChoice2>
-</start>
-
-<scene1>
-<context> [context from startionChoice] </context>
-<desc> [engaging and interesting description of what happens next and the choice that needs to be made] </desc>
-<optA> [first option] </optA>
-<optB> [second option] </optB>
-</scene1>
-
-<scene2>
-<context> [context from startionChoice and scene1 choice] </context>
-...
-</scene2>
-
-<scene3>
-<context> [context from startionChoice, scene1 choice and scene2 choice] </context>
-...
-</scene3>
-
-...
-
-<ending> [what happened at the end as a result of your choices] </ending>
-\`\`\`
-
 Here is an example:
 
 \`\`\`
-<flavor> TNG </flavor>
+<universe> TNG </universe>
+
 <start>
-<startingChoice1> You are the captain of the USS Enterprise. You are on a diplomatic mission across the alpha quadrant.</startingChoice1>
-<startingChoice2> You are the chief engineer of the USS Enterprise. You are on duty in engineering when a ship alert sounds.</startingChoice2>
+<decision0>
+<options>
+<option1> You are the captain of the USS Enterprise. You are on a diplomatic mission across the alpha quadrant.</option1>
+<option2> You are the chief engineer of the USS Enterprise. You are on duty in engineering when a ship alert sounds.</option2>
+</options>
+<choice0> option1 <choice0>
+</decision0>
 </start>
 
 <scene1>
-<context> You have chosen to be the captain of the USS Enterprise. You are on a diplomatic mission across the alpha quadrant.</context>
+<context> You have chosen to be the captain of the USS Enterprise. [episode context]</context>
 <desc> As you sit in the captain's chair, your first officer informs you of a distress signal coming from a nearby planet. You must decide whether to investigate or continue your current mission. </desc>
-<optA> Investigate the distress signal. </optA>
-<optB> Continue the current mission. </optB>
+<decision1>
+<options>
+<option1> Investigate the distress signal. </option1>
+<option2> Continue the current mission. </option2>
+</options>
+<choice1> option1 </choice1>
+</decision1>
 </scene1>
 
 <scene2>
 <context> You have chosen to be the captain of the USS Enterprise. You are on a diplomatic mission across the alpha quadrant. You chose to investigate the distress signal. </context>
 <desc> Upon arriving at the planet, you discover a damaged alien vessel. The aliens ask for your help in repairing their ship. You must decide whether to offer assistance or to leave them to their fate. </desc>
-<optA> Offer assistance in repairing their ship. </optA>
-<optB> Leave the aliens to their fate. </optB>
+<decision2>
+<options>
+<option1> Leave the aliens to their fate. </option1>
+<option2> Offer assistance in repairing their ship </option2>
+</options>
+<choice2> option2 </choice2>
+</decision2>
 </scene2>
-
-<scene3>
-<context> You have chosen to be the captain of the USS Enterprise. You are on a diplomatic mission across the alpha quadrant. You chose to investigate the distress signal. You chose to offer assistance in repairing the ship. </context>
-...
-</scene3>
-
-...
-
-<ending> Helping the aliens repair their ship earns you their gratitude and an alliance. Your reputation as a compassionate and wise captain grows. </ending>
 \`\`\`
 
 Give exactly:
 
 - 1 start tag with 2 interesting and compelling choices
-- 6 sequential scene tags, <scene1> through <scene6> with 2 options each
+- 3 sequential scene tags, <scene1> through <scene3> with 2 options each (do not fork the story)
 - scene1 must have a context that includes your choice from start
 - scene2 must have a context that includes your choice from start, scene1
-- scene3 must have a context that includes your choice from start, scene1 and scene2
-- scene4 must have a context that includes your choice from start, scene1, scene2 and scene3
-- scene5 must have a context that includes your choice from start, scene1, scene2, scene3 and scene4
-- scene6 must have a context that includes your choice from start, scene1, scene2, scene3, scene4 and scene5
-- 1 ending tag including the result of your choices
 
 ONLY FOLLOW ONE PATH THROUGH THE STORY.
-Ignore the choices that were not taken.
-Ignore parts of the episode synopsis that are not relevant to your chosen path.
-You take a single path through the episode.
+Ignore the choices that were not taken.`
+}
+
+const addToExistingEpisode = () => {
+  return ''
+}
+
+const getSystemMessage = (existingEpisode) => {
+  return `
+You are a brilliant "choose your own adventure" Star Trek story simulator. This is how you work:
+
+As input, you are given a Star Trek episode synopsis. Given this input, you must transform this synopsis into a complete "choose your own adventure" style story.
+
+A choose your own adventure story is a story where the reader is asked to choose between two decisions at different points in the narrative. The reader's decisions control what happens later in the story.
+
+As a choose your own adventure simulator, your job is to act as both the writer and the reader. That is, you must generate the narrative and decision options as well as generate the decisions that a hypothetical reader makes.
+
+You must follow these instructions:
+
+* Given a description of a Star Trek episode, write a choose your own adventure version of the episode.
+* Always write the story from the 2nd person perspective. Use "you" and not "I".
+* You must choose a single path through the story. Once a decision is made, it cannot be altered. For example, you cannot change characters in the middle of the story. You do not elaborate on other possible narrative paths.
+* You must use the following structure, this is so responses can be correctly coded.
+
+\`\`\`
+<universe>[type of series: TNG, DS9, VOY, ENT, TOS, TAS, DIS]</universe>
+
+<start>
+<decisionStart>
+<options>
+<option1> You are [Character 1] [episode context] </option1>
+<option2> You are [Character 2] [episode context] </option2>
+</options>
+<choiceStart> [one of the options] </choice>
+</decisionStart>
+</start>
+
+<scene1>
+<context>
+[context from decision1]
+</context>
+<desc> [engaging and interesting description of what happens next and the decision that needs to be made] </desc>
+<decision1>
+<options>
+<option1> [first option] </option1>
+<option2> [second option] </option2>
+</options>
+<choice1> [one of the options] </choice1>
+</decision1>
+</scene1>
+
+<scene2>
+<context>
+[context from start and scene 1]
+</context>
+...
+</scene2>
+
+<scene2>
+<context>
+[context from start and scene 1 and scene 2]
+</context>
+...
+</scene2>
+...
+\`\`\`
+
+${existingEpisode ? addToExistingEpisode() : newEpisode()}
 `
 }
 
@@ -125,27 +148,47 @@ async function main() {
 
   for (const chunk of fileChunks) {
     const chunkPromises = chunk.map(async (file) => {
-      const trainingPath = path.join(trainingDir, path.basename(file, '.txt') + '.md')
+      let episodeCount = 0
+      const trainingPath = path.join(trainingDir, path.basename(file, '.txt') + '_0.txt')
       if (fs.existsSync(trainingPath)) {
         console.log(`Skipping ${file} as a .jsonl file already exists`)
         return
       }
 
       console.log(`Processing ${file}`)
+
       const content = fs.readFileSync(path.join(outputDir, file), 'utf-8')
       console.log(content.length)
+      const existingEpisode = false
       const chatAgent = new ChatGPTAPI({
         apiKey,
-        completionParams: {
-          model: 'gpt-4'
-        },
-        systemMessage: getSystemMessage(questionCount)
+        // completionParams: {
+        //   model: 'gpt-4'
+        // },
+        systemMessage: getSystemMessage(existingEpisode)
       })
 
       try {
-        const res = await chatAgent.sendMessage(content)
-        fs.writeFileSync(trainingPath, res.text)
-        console.log(`Wrote content to ${trainingPath}`)
+        const followUpMessage = 'Please continue the story based on the episode synopsis. Add 3 more scenes'
+        let res = await chatAgent.sendMessage(content)
+        writeResponse(res, file, episodeCount)
+
+        episodeCount++
+        let parentMessageId = res.id
+        res = await chatAgent.sendMessage(followUpMessage, { parentMessageId })
+        writeResponse(res, file, episodeCount)
+
+        episodeCount++
+        parentMessageId = res.id
+        res = await chatAgent.sendMessage(`
+${followUpMessage} and an ending in the format:
+<ending> [what happened at the end as a result of your choices] </ending>
+
+For example:
+<ending> Helping the aliens repair their ship earns you their gratitude and an alliance. Your reputation as a compassionate and wise captain grows. </ending>
+`, { parentMessageId })
+        writeResponse(res, file, episodeCount)
+
       } catch (err) {
         console.error(`An error occurred while processing ${file}:`, err)
       }
@@ -153,6 +196,12 @@ async function main() {
 
     await Promise.all(chunkPromises)
   }
+}
+
+const writeResponse = (res, episodeFile, episodeCount) => {
+  const trainingPath = path.join(trainingDir, path.basename(episodeFile, '.txt') + `_${episodeCount}.txt`)
+  fs.writeFileSync(trainingPath, res.text)
+  console.log(`Wrote content to ${trainingPath}`)
 }
 
 main().catch((err) => {
