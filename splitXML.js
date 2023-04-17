@@ -40,11 +40,23 @@ const excludedTitles = [
 
 const filterPages = (page) => {
   return (
+    page.title[0].includes('episode') &&
     !excludedPrefixes.some(prefix => page.title[0].startsWith(prefix)) &&
     !excludedTitles.some(title => page.title[0].includes(title)) &&
     !page.hasOwnProperty('redirect')
   )
 }
+
+const removeLinesAfter = (pattern, text) => {
+  const match = text.match(pattern)
+  if (match) {
+    const index = match.index
+    text = text.substring(0, index)
+  }
+
+  return text
+}
+
 
 const excludeLinesWithoutContent = (text) => {
   const startsWith = [
@@ -71,7 +83,8 @@ const excludeLinesWithoutContent = (text) => {
     '*{{startrek.com',
     '*{{Wikipedia}}',
     '*{{mbeta}}',
-    ';{{visible'
+    ';{{visible',
+    '{{real world}}'
   ]
 
   const lines = text.split('\n')
@@ -129,6 +142,18 @@ fs.readFile(inputFile, 'utf8', (err, data) => {
           const filename = `${title}_${timestamp}`.replace(/[^\w\/]|_/g, '-').toLowerCase()
           let text = page.revision[0].text[0]._
           text = excludeLinesWithoutContent(text.replace(/<[^>]*>/g, ''))
+
+          // remove the `{{ sidebar ... }}` template which spans multiple lines
+          const sidebarStartIndex = text.indexOf('{{sidebar')
+          if (sidebarStartIndex !== -1) {
+            const sidebarEndIndex = text.indexOf('}}', sidebarStartIndex)
+            text = text.substring(0, sidebarStartIndex) + text.substring(sidebarEndIndex + 2)
+          }
+
+          text = removeLinesAfter(/==\s*Memorable quotes\s*==/, text)
+          text = removeLinesAfter(/==\s*Background information\s*==/, text)
+          text = removeLinesAfter(/==\s*Log entries\s*==/, text)
+
           const chunks = breakTextIntoChunks(text)
 
           for (const [index, chunk] of chunks.entries()) {
