@@ -21,7 +21,7 @@ Here is an example:
 <option1> You are the captain of the USS Enterprise. You are on a diplomatic mission across the alpha quadrant.</option1>
 <option2> You are the chief engineer of the USS Enterprise. You are on duty in engineering when a ship alert sounds.</option2>
 </options>
-<choice0> option1 <choice0>
+<choice0> option1 </choice0>
 </decision0>
 </start>
 
@@ -86,13 +86,13 @@ You must follow these instructions:
 <universe>[type of series: TNG, DS9, VOY, ENT, TOS, TAS, DIS]</universe>
 
 <start>
-<decisionStart>
+<decision0>
 <options>
-<option1> You are [Character 1] [episode context] </option1>
-<option2> You are [Character 2] [episode context] </option2>
+<option1> [engaging and interesting character description, with context about what they are doing and why] </option1>
+<option2> [engaging and interesting character description, with context about what they are doing and why] </option2>
 </options>
-<choiceStart> [one of the options] </choice>
-</decisionStart>
+<choice0> [one of the options] </choice0>
+</decision0>
 </start>
 
 <scene1>
@@ -139,7 +139,13 @@ async function main() {
   // Make the training directory if it doesn't exist
   fs.mkdirSync(trainingDir, { recursive: true })
 
-  const files = fs.readdirSync(outputDir)
+  let files = fs.readdirSync(outputDir)
+
+  // filter files to be only those that end with _0.txt
+  files = files.filter((file) => {
+    return file.endsWith('_0.txt')
+  })
+
   const fileChunks = []
 
   for (let i = 0; i < files.length; i += concurrentRequests) {
@@ -169,19 +175,19 @@ async function main() {
       })
 
       try {
-        const followUpMessage = 'Please continue the story based on the episode synopsis. Add 3 more scenes'
+        const followUpMessage = 'Please continue the story. Only add, do not repeat any of your previous messages. Continue the episode synopsis.'
         let res = await chatAgent.sendMessage(content)
         writeResponse(res, file, episodeCount)
 
         episodeCount++
         let parentMessageId = res.id
-        res = await chatAgent.sendMessage(followUpMessage, { parentMessageId })
+        res = await chatAgent.sendMessage(`${followUpMessage} Add scene4, scene5, and scene6. Your message should start with scene4`, { parentMessageId })
         writeResponse(res, file, episodeCount)
 
         episodeCount++
         parentMessageId = res.id
         res = await chatAgent.sendMessage(`
-${followUpMessage} and an ending in the format:
+${followUpMessage}. Add scene7, scene8, and scene9. Your message should start with scene7. Also add an ending in the format:
 <ending> [what happened at the end as a result of your choices] </ending>
 
 For example:
